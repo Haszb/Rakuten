@@ -1,0 +1,4 @@
+fastapi==0.103.0
+httptools==0.1.* 
+uvicorn==0.27.1
+bs4==0.0.2
