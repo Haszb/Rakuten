@@ -1,82 +1,88 @@
-Project Name
+Rakuten Product Classification Application
 ==============================
 
-This project is a starting Pack for MLOps projects based on the subject "movie_recommandation". It's not perfect so feel free to make some modifications on it.
+This project aims to develop and deploy a product classification application for Rakuten. It utilizes natural language processing to analyze textual product descriptions and computer vision to interpret product images, enabling the automated classification of products in Rakuten's catalog. This automation is designed to streamline the cataloging process, reducing the need for manual classification by product teams and improving efficiency.
 
 Project Organization
 ------------
 
     ├── LICENSE
     ├── README.md          <- The top-level README for developers using this project.
+    ├── app                <- API for deploying models, making it easier for applications to use the predictions.
+    │   ├── crud.py
+    │   ├── database.py
+    │   ├── db_models.py
+    │   ├── main.py
+    │   ├── schemas.py
+    │   └── security.py
     ├── data
-    │   ├── external       <- Data from third party sources -> the external data you want to make a prediction on
-    │   ├── preprocessed      <- The final, canonical data sets for modeling.
-    |   |  ├── image_train <- Where you put the images of the train set
-    |   |  ├── image_test <- Where you put the images of the predict set
-    |   |  ├── X_train_update.csv    <- The csv file with te columns designation, description, productid, imageid like in X_train_update.csv
-    |   |  ├── X_test_update.csv    <- The csv file with te columns designation, description, productid, imageid like in X_train_update.csv
-    │   └── raw            <- The original, immutable data dump.
-    |   |  ├── image_train <- Where you put the images of the train set
-    |   |  ├── image_test <- Where you put the images of the predict set
+    │   ├── external       <- Data from third party sources, for predictions on external data.
+    │   ├── preprocessed   <- The final, canonical data sets for modeling.
+    │   │   ├── image_train <- Directory for train set images.
+    │   │   ├── image_test  <- Directory for prediction set images.
+    │   │   ├── X_train_update.csv <- CSV file with columns: designation, description, productid, imageid.
+    │   │   ├── X_test_update.csv  <- CSV file for predictions with similar columns to X_train_update.csv.
+    │   └── raw            <- The original, immutable data dump.
+    │       ├── image_train <- Directory for train set images.
+    │       ├── image_test  <- Directory for prediction set images.
     │
-    ├── logs               <- Logs from training and predicting
+    ├── logs               <- Logs from training and predicting models.
     │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
+    ├── models             <- Trained and serialized models, model predictions, or model summaries.
     │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
+    ├── notebooks          <- Jupyter notebooks for initial data exploration and analysis.
     │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
+    ├── requirements.txt   <- Requirements file for reproducing the analysis environment.
     │
-    ├── src                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes src a Python module
-    │   ├── main.py        <- Scripts to train models 
-    │   ├── predict.py     <- Scripts to use trained models to make prediction on the files put in ../data/preprocessed
+    ├── requirements_new.txt  <- Additional requirements for API functionality.
+    │
+    ├── src                <- Source code for this project.
+    │   ├── __init__.py    <- Makes src a Python module.
+    │   ├── main.py        <- Scripts to train models.
+    │   ├── predict.py     <- Scripts to use trained models for making predictions.
     │   │
-    │   ├── data           <- Scripts to download or generate data
-    │   │   ├── check_structure.py    
-    │   │   ├── import_raw_data.py 
-    │   │   └── make_dataset.py
+    │   ├── data           <- Scripts to download or generate data.
+    │   │   ├── check_structure.py    
+    │   │   ├── import_raw_data.py 
+    │   │   └── make_dataset.py
     │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
+    │   ├── features       <- Scripts to turn raw data into features for modeling.
+    │   │   └── build_features.py
     │   │
-    │   ├── models                
-    │   │   └── train_model.py
-    │   └── config         <- Describe the parameters used in train_model.py and predict_model.py
+    │   ├── models                
+    │   │   └── train_model.py
+    │   └── config         <- Parameters used in training and prediction scripts.
+    │
+    └── users.db           <- Database for user management in API.
 
---------
+Instructions for Setup and Execution
+------------------------------------
 
-Once you have downloaded the github repo, open the anaconda powershell on the root of the project and follow those instructions :
+1. Create and activate a Conda environment:
+    - `conda create -n "Rakuten-project" python=3.9`
+    - `conda activate Rakuten-project`
 
-> `conda create -n "Rakuten-project"`    <- It will create your conda environement
+2. Install required packages:
+    - `pip install -r requirements.txt`
+    - `pip install -r requirements_new.txt`
 
-> `conda activate Rakuten-project`       <- It will activate your environment
+3. Import raw data:
+    - `python src/data/import_raw_data.py`
 
-> `conda install pip`                    <- May be optionnal
-
-> `pip install -r requirements.txt`      <- It will install the required packages
-
-> `python src/data/import_raw_data.py`   <- It will import the tabular data on data/raw/
-
-> Upload the image data folder set directly on local from https://challengedata.ens.fr/participants/challenges/35/, you should save the folders image_train and image_test respecting the following structure
+4. Upload the image data folder set directly on local from the specified source, respecting the structure in `data/raw`.
 
     ├── data
-    │   └── raw           
+    │   └── raw           
     |   |  ├── image_train 
     |   |  ├── image_test 
 
-> `python src/data/make_dataset.py data/raw data/preprocessed`      <- It will copy the raw dataset and paste it on data/preprocessed/
+5. Prepare the dataset:
+    - `python src/data/make_dataset.py data/raw data/preprocessed`
 
-> `python src/main.py`                   <- It will train the models on the dataset and save them in models. By default, the number of epochs = 1
+6. Train the models:
+    - `python src/main.py`
 
-> `python src/predict.py`                <- It will use the trained models to make a prediction (of the prdtypecode) on the desired data, by default, it will predict on the train. You can pass the path to data and images as arguments if you want to change it
+7. Make predictions:
+    - `python src/predict.py` (Example usage for custom paths is provided in the README)
 
-                Exemple : python src/predict_1.py --dataset_path "data/preprocessed/X_test_update.csv" --images_path "data/preprocessed/image_test"
-
- >>The predictions are saved in data/preprocessed as 'predictions.json'
-
-<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
-python make_dataset.py "../../data/raw" "../../data/preprocessed"
+<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>#cookiecutterdatascience</small></p>
