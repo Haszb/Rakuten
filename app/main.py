@@ -3,14 +3,12 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
 from . import schemas, crud, database, security, db_models
+from .security import get_current_user, oauth2_scheme
 from .schemas import PredictionData, User, UserCreate
 from .database import get_db, engine, Base, SessionLocal
-from .security import ALGORITHM
 from .crud import get_user_by_username, create_user  
 from datetime import timedelta
-from jose import jwt, JWTError
-from typing import Optional
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from dotenv import load_dotenv
 import os
 from tensorflow import keras
@@ -38,8 +36,6 @@ ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
-# Schema OAuth2 avec les jetons 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Structure les routes de l'API en "domaines"   
 tags_metadata = [
@@ -57,49 +53,17 @@ tags_metadata = [
     }
 ]
 
-async def get_current_user(db: Session = Depends(database.get_db), token: str = Depends(oauth2_scheme)):
-    """
-    Vérifie l'utilisateur à partir du token JWT.
-
-    Cette fonction décode le token fourni, extrait le nom d'utilisateur (sub) et tente de récupérer l'utilisateur correspondant dans la base de données. Si le token est invalide, expiré, ou si l'utilisateur n'existe pas dans la base de données, une exception HTTP 401 est levée, indiquant que les credentials ne peuvent pas être validés.
-
-    Args:
-        db (Session): La session de base de données SQLAlchemy, injectée automatiquement par FastAPI grâce à la dépendance `database.get_db`.
-        token (str): Le token JWT fourni par l'utilisateur, injecté automatiquement par FastAPI grâce à la dépendance `oauth2_scheme`.
-
-    Returns:
-        db_models.User: L'instance de l'utilisateur récupérée de la base de données si le token est valide et que l'utilisateur existe.
-
-    Raises:
-        HTTPException: Une exception HTTP 401 est levée si le token est invalide, expiré, ou si aucun utilisateur correspondant n'est trouvé dans la base de données.
-    """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Impossible de valider les identifiants",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-    
-    user = db.query(db_models.User).filter(db_models.User.username == username).first()
-    if user is None:
-        raise credentials_exception
-    return user
-
 users_router = APIRouter()
 
 @users_router.post("/users", response_model=schemas.User, tags=["Utilisateurs"])
 def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     if current_user.role != db_models.Role.admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Utilisateur non autorisé")
-    db_user = crud.get_user_by_username(db, username=user.username)
-    if db_user:
+    
+    existing_user = db.query(db_models.User).filter(db_models.User.username == user.username).first()
+    if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ce nom d'utilisateur existe déjà")
+    
     return crud.create_user(db=db, user=user)
 
 @users_router.put("/users/{identifier}", response_model=schemas.User, tags=["Utilisateurs"])
@@ -124,7 +88,7 @@ def delete_user(identifier: str, db: Session = Depends(database.get_db), current
 api = FastAPI(
     title="Rakuten API",
     description="Our RAKUTEN API Project.",
-    version="1.1",
+    version="1.2",
     openapi_tags=tags_metadata)
 
 api.include_router(users_router)
@@ -140,7 +104,7 @@ async def startup_event():
     Base.metadata.create_all(bind=engine)
 
     try:
-        admin_user = crud.get_user_by_username(db, username=ADMIN_USERNAME)
+        admin_user = crud.get_user_by_username(db, username=ADMIN_USERNAME, raise_exception=False)
         if not admin_user:
             user_in = schemas.UserCreate(
                 username=ADMIN_USERNAME, 

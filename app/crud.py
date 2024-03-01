@@ -4,7 +4,7 @@ from fastapi import HTTPException
 
 def authenticate_user(db: Session, username: str, password: str):
     """
-    Authentifie un utilisateur via son nom d'utilisateur et de son mot de passe.
+    Authentifie un utilisateur via son nom d'utilisateur et son mot de passe.
 
     Renvoi:
         db_models.User : l'utilisateur authentifié ou False si l'authentification échoue.
@@ -16,33 +16,41 @@ def authenticate_user(db: Session, username: str, password: str):
 
 def create_user(db: Session, user: schemas.UserCreate):
     """
-     Crée un nouvel utilisateur dans la base de données.
+    Tente de créer un nouvel utilisateur dans la base de données.
 
-    Args :
-        db (Session) : La session de la base de données.
-        user (schemas.UserCreate) : Les détails de l'utilisateur, cf. schemas.py
+    Args:
+        db (Session): La session de la base de données.
+        user (schemas.UserCreate): Le schéma de l'utilisateur à créer.
 
-    Renvoi :
-        db_models.User : L'utilisateur créé.
+    Returns:
+        L'instance de l'utilisateur créé.
+
+    Raises:
+        HTTPException: Avec un statut 400 pour un conflit de nom d'utilisateur ou un problème de validation.
     """
+    # Hachage du mot de passe utilisateur
+    hashed_password = security.get_password_hash(user.password)
+    db_user = db_models.User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hashed_password,
+        is_active=True,
+        role=user.role
+    )
+    db.add(db_user)
     try:
-        hashed_password = security.get_password_hash(user.password)
-        db_user = db_models.User(
-            username=user.username,
-            email=user.email,
-            hashed_password=hashed_password,
-            is_active=True,  
-            role=user.role
-        )
-        db.add(db_user)
         db.commit()
         db.refresh(db_user)
         return db_user
-    except SQLAlchemyError as e:
+    except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Erreur lors de la création de l'utilisateur.")
+        raise HTTPException(status_code=400, detail="Ce nom d'utilisateur ou email existe déjà.")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erreur inattendue lors de la création de l'utilisateur: {str(e)}")
 
-def get_user_by_username(db: Session, username: str):
+
+def get_user_by_username(db: Session, username: str, raise_exception: bool = True):
     """
     Récupère un utilisateur via son nom d'utilisateur.
 
@@ -53,14 +61,10 @@ def get_user_by_username(db: Session, username: str):
     Renvoi :
         db_models.User : L'utilisateur s'il a été trouvé, sinon aucun.
     """
-    try:
-        user = db.query(db_models.User).filter(db_models.User.username == username).first()
-        if user:
-            return user
-        else:
-            raise HTTPException(status_code=404, detail="Utilisateur non trouvé.")
-    except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération de l'utilisateur.")
+    user = db.query(db_models.User).filter(db_models.User.username == username).first()
+    if user is None and raise_exception:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé.")
+    return user
 
 def update_user_by_identifier(db: Session, identifier: str, user_update: schemas.UserUpdate):
     """
@@ -83,9 +87,13 @@ def update_user_by_identifier(db: Session, identifier: str, user_update: schemas
     for key, value in update_data.items():
         setattr(user, key, value)
 
-    db.commit()
-    db.refresh(user)
-    return user
+    try:
+        db.commit()
+        db.refresh(user)
+        return user
+    except:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour de l'utilisateur.")
 
 def delete_user_by_identifier(db: Session, identifier: str):
     """
@@ -103,7 +111,10 @@ def delete_user_by_identifier(db: Session, identifier: str):
     if not user:
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
 
-    db.delete(user)
-    db.commit()
-    return {"detail": "Utilisateur supprimé"}
-
+    try:
+        db.delete(user)
+        db.commit()
+        return {"detail": "Utilisateur supprimé"}
+    except:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Erreur lors de la suppression de l'utilisateur.")
