@@ -1,5 +1,5 @@
-from features.build_features import TextPreprocessor
-from features.build_features import ImagePreprocessor
+from src.features.build_features import TextPreprocessor
+from src.features.build_features import ImagePreprocessor
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array, load_img
@@ -39,7 +39,7 @@ class Predict:
         return img_array
 
     def predict(self):
-        X = pd.read_csv(self.filepath)[:10] #
+        X = pd.read_csv(self.filepath)
         
         text_preprocessor = TextPreprocessor()
         image_preprocessor = ImagePreprocessor(self.imagepath)
