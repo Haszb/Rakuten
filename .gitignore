@@ -96,3 +96,5 @@ target/
 
 # Artifacts
 # /models/
+result.zip
+models/__init__.py

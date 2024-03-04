@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
-from .db_models import Role
+from db_models import Role
 
 class UserCreate(BaseModel):
     """
@@ -56,8 +56,8 @@ class PredictionData(BaseModel):
     """
     dataset_path: str
     images_path: str
-    tokenizer_config_path:Optional[str] = "./models/" 
-    lstm_model_path:Optional[str] = "./models/"
-    vgg16_model_path:Optional[str] = "./models/" 
-    model_weights_path:Optional[str] = "./models/"
-    mapper_path:Optional[str] = "./models/"
+    tokenizer_config_path:Optional[str] = "../models/" 
+    lstm_model_path:Optional[str] = "../models/"
+    vgg16_model_path:Optional[str] = "../models/" 
+    model_weights_path:Optional[str] = "../models/"
+    mapper_path:Optional[str] = "../models/"

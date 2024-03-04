@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, Enum
 from sqlalchemy.orm import validates
-from .database import Base
+from database import Base
 from enum import Enum as PyEnum
 
 class Role(PyEnum):

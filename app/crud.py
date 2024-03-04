@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from . import db_models, security, schemas
+import db_models, security, schemas
 from fastapi import HTTPException
 
 def authenticate_user(db: Session, username: str, password: str):

@@ -1,16 +1,20 @@
-from fastapi import FastAPI, Depends, HTTPException, status, APIRouter
+import sys
+from pathlib import Path
+import os
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from fastapi import FastAPI, Depends, HTTPException, status, APIRouter, File, Form, UploadFile
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
-from . import schemas, crud, database, security, db_models
-from .security import get_current_user, oauth2_scheme
-from .schemas import PredictionData, User, UserCreate
-from .database import get_db, engine, Base, SessionLocal
-from .crud import get_user_by_username, create_user  
+import schemas, crud, database, security, db_models
+from security import get_current_user, oauth2_scheme
+from schemas import PredictionData, User, UserCreate
+from database import get_db, engine, Base, SessionLocal
+from crud import get_user_by_username, create_user  
 from datetime import timedelta
 from fastapi.security import OAuth2PasswordRequestForm
 from dotenv import load_dotenv
-import os
 from tensorflow import keras
 import pandas as pd
 import json
@@ -20,9 +24,8 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array, load_img
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import numpy as np
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
+from PIL import Image
+import random
 from src.predict import Predict
 
 
@@ -219,3 +222,68 @@ async def get_prediction(prediction_data: PredictionData, db: Session = Depends(
             detail="Error : " + str(e))    
     
     return predictions
+
+def generate_productid():
+    return random.randint(4252011632, 10000000000)
+def generate_imageid():
+    return random.randint(1328824385, 10000000000)
+
+@api.post("/new_product")
+async def create_product(designation: str = Form(...),
+                         description: str = Form(...),
+                         image: UploadFile = File(...),
+                         current_user: schemas.User = Depends(get_current_user)):
+    """
+    Create a new product with the provided designation, description, and image.
+
+    Parameters:
+    - designation (str): The designation of the product.
+    - description (str): The description of the product.
+    - image (UploadFile): The image file of the product.
+    - current_user (schemas.User): The current user making the request.
+
+    Returns:
+    - dict: A dictionary containing the result of the operation, or an error message if the image is invalid.
+    """
+    if current_user.role not in [db_models.Role.admin, db_models.Role.employe]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé. Opération autorisée uniquement pour les administrateurs et les employés.")
+       
+    try:
+        img = Image.open(image.file)
+        img.verify()
+        
+        productid = generate_productid()
+        imageid = generate_imageid()
+        
+        new_product = {
+            "designation" : designation,
+            "description" : description,
+            "productid" : productid,
+            "imageid" : imageid
+        }
+        
+        # Lecture du fichier CSV
+        if os.path.exists("../data/new_product/new_product.csv"):
+            new_product_df = pd.read_csv("../data/new_product/new_product.csv")
+        else:
+            new_product_df = pd.DataFrame(columns=["designation", "description", "productid", "imageid"])
+        
+        # Enregistrement à la fin du csv
+        new_product_df.loc[len(new_product_df)] = new_product
+        new_product_df.to_csv("../data/new_product/new_product.csv")
+
+        # Renommer l'image
+        image_name = image.filename
+        new_image_name = f"{image_name}_{imageid}_{productid}.jpg"
+
+        # Spécifier le chemin où enregistrer le fichier
+        upload_directory = "../data/new_product/image/"
+        image_path = os.path.join(upload_directory, new_image_name)
+
+        #enregistrer l'image avec le nouveau nom
+        img = Image.open(image.file)
+        img.save(image_path)
+        
+    
+    except (IOError, SyntaxError) as e:
+        return {"error": "Invalid image file"}

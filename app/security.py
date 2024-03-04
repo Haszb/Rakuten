@@ -6,7 +6,7 @@ import os
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from . import database, db_models
+import database, db_models
 
 load_dotenv()  
 
