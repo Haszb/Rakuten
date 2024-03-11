@@ -212,14 +212,12 @@ async def get_prediction(prediction_data: PredictionData, db: Session = Depends(
         # Sauvegarde des prédictions
         #with open("data/preprocessed/predictions.json", "w", encoding="utf-8") as json_file:
         #    json.dump(predictions, json_file, indent=2)
-    except IOError as e:
-        raise HTTPException(
-            status_code=404,
-            detail="File not found : " + str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail="File not found : " + str(e))
+    #except IOError as e:
+    #    raise HTTPException(status_code=404, detail="IO Error : " + str(e))
     except Exception as e:
-        raise HTTPException(
-            status_code=404,
-            detail="Error : " + str(e))    
+        raise HTTPException(status_code=404, detail="Error : " + str(e))    
     
     return predictions
 

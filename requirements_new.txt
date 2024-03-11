@@ -1,4 +1,4 @@
-fastapi==0.103.0
+fastapi==0.100.0 
 httptools==0.1.* 
 uvicorn==0.27.1
 bs4==0.0.2
@@ -8,3 +8,5 @@ passlib[bcrypt]
 python-dotenv
 python-multipart
 pydantic[email]
+pytest
+pytest-asyncio
