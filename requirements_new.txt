@@ -10,3 +10,4 @@ python-multipart
 pydantic[email]
 pytest
 pytest-asyncio
+typing_extensions==4.6.0
