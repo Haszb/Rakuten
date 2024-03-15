@@ -36,8 +36,7 @@ jobs:
           # Vous pouvez également inclure d'autres dépendances nécessaires ici
 
       - name: Run tests
-        run: |
-          pytest
+        run: pytest app/Tests/tests.py
 
 #     - name: Run flake8
 #        uses: py-actions/flake8@v2
