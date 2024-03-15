@@ -32,8 +32,8 @@ jobs:
           # Vous pouvez également inclure d'autres dépendances nécessaires ici
 
       - name: Run tests
-        run: pytest --rootdir=/home/runner/work/nov23_rakuten_mlops_ app/Tests/tests.py
-        #run: pytest app/Tests/tests.py
+        run: |
+          pytest
 
 #     - name: Run flake8
 #        uses: py-actions/flake8@v2
