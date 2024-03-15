@@ -21,8 +21,10 @@ jobs:
 #          pip install pytest
       - name: Install dependencies
         run: |
-          pip install -r app/requirements.txt
-          pip install -r app/requirements_new.txt
+          python -m pip install -r app/requirements.txt
+          python -m pip install -r app/requirements.txt
+#          pip install -r app/requirements.txt
+#          pip install -r app/requirements_new.txt
 #          pip install flake8
 #      - name: Install dependencies
 #        run: |

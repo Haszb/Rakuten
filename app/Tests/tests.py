@@ -3,6 +3,10 @@ import pytest
 import sys
 import os
 
+# Obtient le chemin absolu du dossier parent
+parent_folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# Ajoute le chemin du dossier parent au chemin de recherche des modules
+sys.path.append(parent_folder_path)
 
 # Récupère le chemin du répertoire courant
 current_directory = os.path.abspath(os.path.dirname(__file__))

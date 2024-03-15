@@ -63,8 +63,8 @@ Instructions for Setup and Execution
     - `conda activate Rakuten-project`
 
 2. Install required packages:
-    - `pip install -r requirements.txt`
-    - `pip install -r requirements_new.txt`
+    - `python.exe -m pip install -r app/requirements.txt`
+    - `python.exe -m pip install -r app/requirements_new.txt`
 
 3. Import raw data:
     - `python src/data/import_raw_data.py`

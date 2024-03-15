@@ -10,8 +10,10 @@ WORKDIR /app/app
 COPY . /app/app
 
 # Installer les dépendances nécessaires
-RUN pip install -r /app/app/requirements.txt
-RUN pip install -r /app/app/requirements_new.txt
+#RUN pip install -r /app/app/requirements.txt
+#RUN pip install -r /app/app/requirements_new.txt
+RUN python -m pip install -r /app/app/requirements.txt
+RUN python -m pip install -r /app/app/requirements_new.txt
 
 # Ajouter le répertoire "src" au PYTHONPATH
 ENV PYTHONPATH "${PYTHONPATH}:/app/src"
