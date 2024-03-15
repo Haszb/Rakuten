@@ -16,6 +16,10 @@ jobs:
         with:
           python-version: "3.9"
 
+      # Ajoutez une étape pour configurer PYTHONPATH
+      - name: Set PYTHONPATH
+        run: echo "::set-env name=PYTHONPATH::${PYTHONPATH}:app/Tests/"
+
 #      - name: Install pytest and flake8
 #        run: |
 #          pip install pytest
