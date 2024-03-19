@@ -190,8 +190,8 @@ async def get_prediction(prediction_data: PredictionData, db: Session = Depends(
             tokenizer_config = json_file.read()
         tokenizer = keras.preprocessing.text.tokenizer_from_json(tokenizer_config)
 
-        lstm = keras.models.load_model(prediction_data.lstm_model_path + "best_lstm_model.h5")
-        vgg16 = keras.models.load_model(prediction_data.vgg16_model_path + "best_vgg16_model.h5")
+        lstm = keras.models.load_model(prediction_data.lstm_model_path + "best_lstm_model.h5", compile= False)
+        vgg16 = keras.models.load_model(prediction_data.vgg16_model_path + "best_vgg16_model.h5", compile= False)
 
         with open(prediction_data.model_weights_path + "best_weights.json", "r") as json_file:
             best_weights = json.load(json_file)
@@ -318,8 +318,8 @@ async def predict_new_product(prediction_data: PredictionData, db: Session = Dep
             tokenizer_config = json_file.read()
         tokenizer = keras.preprocessing.text.tokenizer_from_json(tokenizer_config)
 
-        lstm = keras.models.load_model(prediction_data.lstm_model_path + "best_lstm_model.h5")
-        vgg16 = keras.models.load_model(prediction_data.vgg16_model_path + "best_vgg16_model.h5")
+        lstm = keras.models.load_model(prediction_data.lstm_model_path + "best_lstm_model.h5", compile=False)
+        vgg16 = keras.models.load_model(prediction_data.vgg16_model_path + "best_vgg16_model.h5", compile=False)
 
         with open(prediction_data.model_weights_path + "best_weights.json", "r") as json_file:
             best_weights = json.load(json_file)
