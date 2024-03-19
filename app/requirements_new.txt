@@ -1,13 +1,13 @@
-fastapi==0.100.0 
-httptools==0.1.* 
-uvicorn==0.27.1
-bs4==0.0.2
-sqlalchemy 
-python-jose[cryptography] 
-passlib[bcrypt]
-python-dotenv
-python-multipart
-pydantic[email]
-pytest
-pytest-asyncio
-typing_extensions==4.6.0
+# fastapi==0.100.0 
+# httptools==0.1.* 
+# uvicorn==0.27.1
+# bs4==0.0.2
+# sqlalchemy 
+# python-jose[cryptography] 
+# passlib[bcrypt]
+# python-dotenv
+# python-multipart
+# pydantic[email]
+# pytest
+# pytest-asyncio
+# typing_extensions==4.6.0
