@@ -430,3 +430,46 @@ async def check_prediction(model_prediction: int = model_prediction,
         raise HTTPException(status_code=404, detail="Error : " + str(e))
     
     return new_row
+
+   
+@api.post('/Stats', tags=["New_product"])
+async def get_stats(db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
+    """
+    Retrieves statistics on new product predictions.
+
+    Parameters:
+    - db: Database session.
+    - current_user: Current user accessing the endpoint.
+
+    Returns:
+    - Dictionary containing the number of new products and calculated accuracy.
+    """
+    
+    # Check if the user has the necessary permissions
+    if current_user.role not in [db_models.Role.admin, db_models.Role.employe]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied. Operation only allowed for administrators and employees..")
+    
+    try:
+        # Load the prediction data and calculate statistics
+        prediction_verified_df = pd.read_csv('../data/new_product/prediction_verified.csv')
+        accuracy_new_product = len(prediction_verified_df[prediction_verified_df['verified_prediction'] == "Success"]) / len(prediction_verified_df) *100 
+        
+        new_prod_data = {
+            "Number of new products" : len(prediction_verified_df),
+            "Calculated accuracy of new product (%)" : accuracy_new_product
+        }
+        # Convert new_prod_data dictionary to JSON format
+        new_prod_json = json.dumps(new_prod_data)
+
+        # Save the JSON data to a file
+        with open('../data/new_product/new_prod_data.json', 'w') as json_file:
+            json_file.write(new_prod_json)
+        
+        return new_prod_data
+    
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail="File not found : " + str(e))
+    #except IOError as e:
+    #    raise HTTPException(status_code=404, detail="IO Error : " + str(e))
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Error : " + str(e)) 
