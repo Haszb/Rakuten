@@ -63,11 +63,10 @@ Instructions for Setup and Execution
     - `conda activate Rakuten-project`
 
 2. Install required packages:
-    - `python.exe -m pip install -r app/requirements.txt`
-    - `python.exe -m pip install -r app/requirements_new.txt`
+    - `python3 -m pip install -r app/requirements.txt`
 
 3. Import raw data:
-    - `python src/data/import_raw_data.py`
+    - `python3 src/data/import_raw_data.py`
 
 4. Upload the image data folder set directly on local from the specified source, respecting the structure in `data/raw`.
 
@@ -77,13 +76,13 @@ Instructions for Setup and Execution
         |   |  ├── image_test 
 
 5. Prepare the dataset:
-    - `python src/data/make_dataset.py data/raw data/preprocessed`
+    - `python3 src/data/make_dataset.py data/preprocessed`
 
 6. Train the models:
-    - `python src/main.py`
+    - `python3 src/main.py`
 
 7. Make predictions:
-    - `python src/predict.py` (Example usage for custom paths is provided in the README)
+    - `python3 src/predict.py` (Example usage for custom paths is provided in the README)
   
 8. Place a `.env` file at the root of your local directory. The content to be inserted is as follows:
     - SECRET_KEY=YOUR_SECRET_KEY
