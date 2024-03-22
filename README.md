@@ -82,13 +82,10 @@ Instructions for Setup and Execution
     - `python3 src/main.py`
 
 7. Make predictions:
-    - `python3 src/predict.py` (Example usage for custom paths is provided in the README)
+    - `python3 src/predict.py`
   
-8. Place a `.env` file at the root of your local directory. The content to be inserted is as follows:
-    - SECRET_KEY=YOUR_SECRET_KEY
-    - DATABASE_URL=sqlite:///./users.db
-    - ADMIN_USERNAME=YOUR_ADMIN_USERNAME
-    - ADMIN_EMAIL=YOUR_ADMIN_EMAIL
-    - ADMIN_PASSWORD=YOUR_ADMIN_PASSWORD
+      Exemple : python3 src/predict1.py --dataset_path "data/preprocessed/X_test_update.csv" --images_path "data/preprocessed/image_test"
+
+ The predictions are saved in data/preprocessed as 'predictions.json'
 
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>#cookiecutterdatascience</small></p>
