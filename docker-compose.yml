@@ -21,4 +21,75 @@ services:
       ADMIN_USERNAME: "admin"
       ADMIN_EMAIL: "admin@admin.com"
       ADMIN_PASSWORD: "ProjetMLOps@24"
-      
+
+  airflow-webserver:
+    image: apache/airflow:2.1.1
+    container_name: airflow_webserver
+    command: webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: jsDHZLzPZyYvzKycP9TThWHGsPsDhaRn7NLndsi6y8M=
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - type: bind
+        source: ./data
+        target: /app/data
+      - type: bind
+        source: ./models
+        target: /app/models
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  airflow-scheduler:
+    image: apache/airflow:2.1.1
+    container_name: airflow_scheduler
+    command: scheduler
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: jsDHZLzPZyYvzKycP9TThWHGsPsDhaRn7NLndsi6y8M=
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - type: bind
+        source: ./data
+        target: /app/data
+      - type: bind
+        source: ./models
+        target: /app/models
+    depends_on:
+      - postgres
+
+  airflow-init:
+    image: apache/airflow:2.1.1
+    container_name: airflow_init
+    command: version
+    environment:
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: jsDHZLzPZyYvzKycP9TThWHGsPsDhaRn7NLndsi6y8M=
+      _AIRFLOW_DB_UPGRADE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: admin
+      _AIRFLOW_WWW_USER_PASSWORD: ProjetMLOps@24
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres_airflow
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db:/var/lib/postgresql/data
+
+volumes:
+  postgres-db:
+
