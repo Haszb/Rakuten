@@ -3,6 +3,8 @@ from airflow.operators.python_operator import PythonOperator, BranchPythonOperat
 from airflow.models import Variable
 import json
 from datetime import datetime, timedelta
+import requests
+import os
 
 default_args = {
     'owner': 'airflow',
@@ -19,16 +21,64 @@ dag = DAG(
     schedule_interval=timedelta(minutes=30),  
 )
 
+admin_username = Variable.get("admin_username")
+admin_password = Variable.get("admin_password")
+api_url = Variable.get("api_url", 'http://api:8000') 
+
+def get_jwt_token(api_url: str, username: str, password: str):
+    token_url = f"{api_url}/token"
+    data = {
+        "grant_type": "password",
+        "username": username,
+        "password": password,
+    }
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    response = requests.post(token_url, data=data, headers=headers)
+    if response.status_code == 200:
+        return response.json().get("access_token")
+    else:
+        print(f"Error obtaining JWT token: {response.status_code}, {response.text}")
+        return None
+
 def do_nothing():
     pass
 
 def get_new_prod_data():
     file_path = '/app/data/new_product/new_prod_data.json'
+    stats_url = f"{api_url}/Stats" 
+    global token
+
+    token = get_jwt_token(api_url, admin_username, admin_password)
+    if token is None:
+        print("Unable to obtain token, exiting...")
+        return None
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    print("Requesting new_prod_data.json update...")
+    response = requests.post(stats_url, headers=headers)  
+
+    if response.status_code == 200:
+        print("new_prod_data.json is now available.")
+    else:
+        print(f"Error during API request: {response.status_code}")
+        return None
     
-    with open(file_path, 'r') as json_file:
-        data = json.load(json_file)
+    # Lecture du fichier mis à jour
+    try:
+        with open(file_path, 'r') as json_file:
+            data = json.load(json_file)
         
-    return data["Number of new products"], data["Calculated accuracy of new product (%)"]
+        return data["Number of new products"], data["Calculated accuracy of new product (%)"]
+    except Exception as e:
+        print(f"Error reading new_prod_data.json: {e}")
+        return None
+
+
+
+
 
 def check_conditions(**kwargs):
     # Récupérer les données actuelles 
