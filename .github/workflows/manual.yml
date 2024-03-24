@@ -1,0 +1,25 @@
+name: Run docker compose
+
+on:
+  workflow_dispatch: # Déclencheur manuel depuis l'interface GitHub
+
+jobs:
+  cd:
+    name: Check tests
+    runs-on: ubuntu-20.04
+
+    steps:
+      # Checkout du repository avant d'utiliser compose-action
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Utilisation de l'action compose-action
+      - name: Run Docker Compose
+        uses: hoverkraft-tech/compose-action@v1.5.1
+        with:
+          compose-file: "./docker/docker-compose.yml" # Spécification du fichier docker-compose à utiliser
+          down-flags: "--volumes" # Options supplémentaires pour la commande docker-compose down
+          services: | # Liste des services Docker Compose à démarrer
+            helloworld2
+            helloworld3
+
