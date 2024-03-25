@@ -27,6 +27,7 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 import numpy as np
 from PIL import Image
 import random
+import shutil
 from src.predict import Predict
 from datetime import datetime
 
@@ -392,11 +393,11 @@ async def check_prediction(model_prediction: int = model_prediction,
     try:
         # Check if the prediction verified CSV file exists, otherwise create it        
         if os.path.exists("../data/new_product/prediction_verified.csv"):
-            product_pred_verified = pd.read_csv("../data/new_product/prediction_verified.csv")
+            product_pred_verified = pd.read_csv("../data/new_product/prediction_verified.csv", index_col=0)
         else:
             product_pred_verified = pd.DataFrame(columns=["date", "user",
                                                             "designation", "description", "productid", "imageid",
-                                                            "model_prediction", "verified_prediction"])
+                                                            "model_prediction", "verified_prediction", "Result"])
         
         # Get the current date and the username of the current user        
         prediction_date = datetime.today().strftime("%Y-%m-%d")
@@ -405,7 +406,7 @@ async def check_prediction(model_prediction: int = model_prediction,
         to_predict_df = pd.read_csv("../data/new_product/to_predict.csv")
         
         # Determine if the verification process was successful        
-        verification_process = verification_prediction == PredictionOption.success or verification_prediction == model_prediction
+        verification_process = (verification_prediction == PredictionOption.success) | (verification_prediction == str(model_prediction))
         new_row = {
             "date": prediction_date,
             "user": user,
@@ -414,13 +415,14 @@ async def check_prediction(model_prediction: int = model_prediction,
             "productid": int(to_predict_df["productid"].iloc[0]),
             "imageid": int(to_predict_df["imageid"].iloc[0]),
             "model_prediction": int(model_prediction),
-            "verified_prediction": str("Success" if  verification_process else verification_prediction.value)
+            "verified_prediction": int(model_prediction if  verification_process else verification_prediction.value),
+            "Result" : str("Success" if verification_process else "Failure")
             }
 
         # Add the new row to the prediction verified DataFrame and save it to a CSV file        
         new_row_df = pd.DataFrame([new_row])
         product_pred_verified.loc[len(product_pred_verified)] = new_row_df.loc[0]
-        product_pred_verified.to_csv("../data/new_product/prediction_verified.csv", index= False)
+        product_pred_verified.to_csv("../data/new_product/prediction_verified.csv")
             
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail="File not found : " + str(e))
@@ -437,10 +439,6 @@ async def get_stats(db: Session = Depends(database.get_db), current_user: schema
     """
     Retrieves statistics on new product predictions.
 
-    Parameters:
-    - db: Database session.
-    - current_user: Current user accessing the endpoint.
-
     Returns:
     - Dictionary containing the number of new products and calculated accuracy.
     """
@@ -450,23 +448,130 @@ async def get_stats(db: Session = Depends(database.get_db), current_user: schema
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied. Operation only allowed for administrators and employees..")
     
     try:
-        # Load the prediction data and calculate statistics
-        prediction_verified_df = pd.read_csv('../data/new_product/prediction_verified.csv')
-        accuracy_new_product = len(prediction_verified_df[prediction_verified_df['verified_prediction'] == "Success"]) / len(prediction_verified_df) *100 
         
-        new_prod_data = {
-            "Number of new products" : len(prediction_verified_df),
-            "Calculated accuracy of new product (%)" : accuracy_new_product
-        }
-        # Convert new_prod_data dictionary to JSON format
-        new_prod_json = json.dumps(new_prod_data)
+        # Check if the prediction data exist, return a dictionnary if not
+        prediction_verified_file = "../data/new_product/prediction_verified.csv"
+        if not os.path.exists(prediction_verified_file):
+            new_prod_data = {
+                "Number of new products" : 0,
+                "Calculated accuracy of new product (%)" : 100
+            }
+            
+        else:
+            # Load the prediction data  
+            prediction_verified_df = pd.read_csv(prediction_verified_file)
+            
+            #  Check that the lenght of the data is different from 0, to prevent an error (divide by 0)
+            if len(prediction_verified_df) == 0:
+                new_prod_data = {
+                "Number of new products" : 0,
+                "Calculated accuracy of new product (%)" : 100
+                }               
+   
+            else:          
+                #Calculate  some statistics    
+                accuracy_new_product = len(prediction_verified_df[prediction_verified_df['Result'] == "Success"]) / len(prediction_verified_df) *100 
+                new_prod_data = {
+                    "Number of new products" : len(prediction_verified_df),
+                    "Calculated accuracy of new product (%)" : accuracy_new_product
+                    }
+            # Convert new_prod_data dictionary to JSON format
+            new_prod_json = json.dumps(new_prod_data)
 
-        # Save the JSON data to a file
-        with open('../data/new_product/new_prod_data.json', 'w') as json_file:
-            json_file.write(new_prod_json)
+            # Save the JSON data to a file
+            with open('../data/new_product/new_prod_data.json', 'w') as json_file:
+                json_file.write(new_prod_json)
         
         return new_prod_data
     
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail="File not found : " + str(e))
+    #except IOError as e:
+    #    raise HTTPException(status_code=404, detail="IO Error : " + str(e))
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Error : " + str(e)) 
+
+
+@api.post("/move_new_product", tags=['New_product'])
+async def move_new_product(db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
+    """
+    Moves new product data and images, updates datasets, and archives files.
+    """
+    # Check if the user has the necessary permissions
+    if current_user.role not in [db_models.Role.admin, db_models.Role.employe]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied. Operation only allowed for administrators and employees..")
+    
+    try:
+        # Check if the prediction_verified.csv file exists   
+        if os.path.exists("../data/new_product/prediction_verified.csv"):
+            new_product_df = pd.read_csv("../data/new_product/prediction_verified.csv")
+        else:
+            return "Le fichier prediction_verified.csv n'existe pas."
+        
+        # Split the new product data into train and test sets
+        sample_size_train = int(len(new_product_df) * 0.8)
+        columns_to_keep = ["designation", "description", "productid", "imageid", "verified_prediction"]
+        new_prod_to_train = new_product_df[columns_to_keep].sample(sample_size_train, random_state=42)
+        new_prod_to_test = new_product_df[columns_to_keep].drop(new_prod_to_train.index)
+        
+        # Create directories for train and test images
+        train_dir = "../data/new_product/images_train"
+        test_dir = "../data/new_product/images_test"
+        os.makedirs(train_dir, exist_ok=True)
+        os.makedirs(test_dir, exist_ok=True)
+        
+        # Move images to train or test directories based on the split
+        # Iterate through each row in the DataFrame     
+        for index, row in new_product_df.iterrows():
+            # Generate the image name based on the imageid and productid
+            image_name = f"image_{row['imageid']}_product_{row['productid']}.jpg"
+            # Determine the destination directory based on whether the row is in new_prod_to_train or new_prod_to_test
+            if index in new_prod_to_train.index:
+                destination = os.path.join(train_dir, image_name)
+                new_product_df.loc[index, "Sent_to"] = "Train"
+            elif index in new_prod_to_test.index:
+                destination = os.path.join(test_dir, image_name)
+                new_product_df.loc[index, "Sent_to"] = "Test"
+            else:
+                # Skip to the next iteration if the row index is not found in either new_prod_to_train or new_prod_to_test
+                continue
+            # Construct the source path of the image
+            source = os.path.join("../data/new_product/image", image_name)
+            # Move the image file from the source directory to the destination directory
+            shutil.move(source, destination)
+
+
+        # Update X_train_update, X_test_update, and Y_train_CVw08PX datasets
+        x_train_update = pd.read_csv('../data/preprocessed/X_train_update.csv', index_col=0)
+        x_test_update = pd.read_csv("../data/preprocessed/X_test_update.csv", index_col=0)
+        y_train_CVw08PX = pd.read_csv("../data/preprocessed/Y_train_CVw08PX.csv", index_col=0)
+        
+        x_train_update = pd.concat([x_train_update, new_prod_to_train.drop(columns=['verified_prediction'])],
+                                ignore_index=True)
+        x_train_update.to_csv('../data/new_product/X_train_update_with_new_prod.csv')
+        
+        x_test_update = pd.concat([x_test_update, new_prod_to_test.drop(columns=['verified_prediction'])],
+                                ignore_index=True)
+        x_test_update.to_csv('../data/new_product/X_test_update_with_new_prod.csv')
+        
+        product_code = new_prod_to_train.rename(columns= {'verified_prediction':'prdtypecode'}).drop(columns=["designation","description","productid","imageid"])
+        y_train_CVw08PX = pd.concat([y_train_CVw08PX, product_code],
+                                    ignore_index=True)
+        y_train_CVw08PX.to_csv('../data/new_product/y_train_CVw08PX_with_new_prod.csv')
+        
+        # Archive files in a directory named with the current date
+        source_dir = "../data/new_product"
+        archive_dir = "../data/archive"
+        os.makedirs(archive_dir, exist_ok=True)
+        
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        destination_dir = os.path.join(archive_dir, current_date)
+        
+        for file in os.listdir(source_dir):
+            source_file = os.path.join(source_dir, file)
+            if os.path.isfile(source_file):
+                shutil.move(source_file, destination_dir)
+            
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail="File not found : " + str(e))
     #except IOError as e:
