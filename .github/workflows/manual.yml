@@ -14,6 +14,31 @@ jobs:
 
       # Utilisation de l'action compose-action
       - name: Run Docker Compose
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          AIRFLOW__CORE__EXECUTOR: ${{ secrets.AIRFLOW__CORE__EXECUTOR }}
+          AIRFLOW__CORE__SQL_ALCHEMY_CONN: ${{ secrets.AIRFLOW__CORE__SQL_ALCHEMY_CONN }}
+          AIRFLOW__CORE__FERNET_KEY: ${{ secrets.AIRFLOW__CORE__FERNET_KEY }}
+          AIRFLOW__CORE__LOAD_EXAMPLES: ${{ secrets.AIRFLOW__CORE__LOAD_EXAMPLES }}
+          _AIRFLOW_DB_UPGRADE: ${{ secrets._AIRFLOW_DB_UPGRADE }}
+          _AIRFLOW_WWW_USER_CREATE: ${{ secrets._AIRFLOW_WWW_USER_CREATE }}
+          _AIRFLOW_WWW_USER_USERNAME: ${{ secrets._AIRFLOW_WWW_USER_USERNAME }}
+          _AIRFLOW_WWW_USER_PASSWORD: ${{ secrets._AIRFLOW_WWW_USER_PASSWORD }}
+          AIRFLOW__EMAIL__EMAIL_BACKEND: ${{ secrets.AIRFLOW__EMAIL__EMAIL_BACKEND }}
+          AIRFLOW__SMTP__SMTP_HOST: ${{ secrets.AIRFLOW__SMTP__SMTP_HOST }}
+          AIRFLOW__SMTP__SMTP_STARTTLS: ${{ secrets.AIRFLOW__SMTP__SMTP_STARTTLS }}
+          AIRFLOW__SMTP__SMTP_SSL: ${{ secrets.AIRFLOW__SMTP__SMTP_SSL }}
+          AIRFLOW__SMTP__SMTP_USER: ${{ secrets.AIRFLOW__SMTP__SMTP_USER }}
+          AIRFLOW__SMTP__SMTP_PASSWORD: ${{ secrets.AIRFLOW__SMTP__SMTP_PASSWORD }}
+          AIRFLOW__SMTP__SMTP_PORT: ${{ secrets.AIRFLOW__SMTP__SMTP_PORT }}
+          AIRFLOW__SMTP__SMTP_MAIL_FROM: ${{ secrets.AIRFLOW__SMTP__SMTP_MAIL_FROM }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         uses: hoverkraft-tech/compose-action@v1.5.1
         with:
           compose-file: "./docker-compose.yml" # Spécification du fichier docker-compose à utiliser
