@@ -1,7 +1,6 @@
 name: Run docker compose
 
-on:
-  workflow_dispatch: # Déclencheur manuel depuis l'interface GitHub
+on: push # Déclencheur manuel depuis l'interface GitHub
 
 jobs:
   build:
