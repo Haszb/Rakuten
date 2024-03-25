@@ -4,7 +4,7 @@ on:
   workflow_dispatch: # Déclencheur manuel depuis l'interface GitHub
 
 jobs:
-  cd:
+  build:
     name: Check tests
     runs-on: ubuntu-20.04
 
@@ -19,7 +19,5 @@ jobs:
         with:
           compose-file: "./docker-compose.yml" # Spécification du fichier docker-compose à utiliser
           down-flags: "--volumes" # Options supplémentaires pour la commande docker-compose down
-          #services: | # Liste des services Docker Compose à démarrer
-          #  helloworld2
-          #  helloworld3
+          
 
