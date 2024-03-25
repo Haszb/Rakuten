@@ -15,26 +15,19 @@ services:
       - type: bind
         source: ./models
         target: /app/models
-    environment:
-      SECRET_KEY: "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-      DATABASE_URL: "sqlite:///./users.db"
-      ADMIN_USERNAME: "admin"
-      ADMIN_EMAIL: "admin@admin.com"
-      ADMIN_PASSWORD: "ProjetMLOps@24"
+    env_file: 
+      - .env
 
   airflow-webserver:
     image: apache/airflow:2.1.1
     container_name: airflow_webserver
     command: webserver
-    environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: jsDHZLzPZyYvzKycP9TThWHGsPsDhaRn7NLndsi6y8M=
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    env_file: 
+      - .env
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
+      - ./flow/dags:/opt/airflow/dags
+      - ./flow/logs:/opt/airflow/logs
+      - ./flow/plugins:/opt/airflow/plugins
       - type: bind
         source: ./data
         target: /app/data
@@ -50,15 +43,12 @@ services:
     image: apache/airflow:2.1.1
     container_name: airflow_scheduler
     command: scheduler
-    environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: jsDHZLzPZyYvzKycP9TThWHGsPsDhaRn7NLndsi6y8M=
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    env_file: 
+      - .env
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./plugins:/opt/airflow/plugins
+      - ./flow/dags:/opt/airflow/dags
+      - ./flow/logs:/opt/airflow/logs
+      - ./flow/plugins:/opt/airflow/plugins
       - type: bind
         source: ./data
         target: /app/data
@@ -72,24 +62,16 @@ services:
     image: apache/airflow:2.1.1
     container_name: airflow_init
     command: version
-    environment:
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: jsDHZLzPZyYvzKycP9TThWHGsPsDhaRn7NLndsi6y8M=
-      _AIRFLOW_DB_UPGRADE: "true"
-      _AIRFLOW_WWW_USER_CREATE: "true"
-      _AIRFLOW_WWW_USER_USERNAME: admin
-      _AIRFLOW_WWW_USER_PASSWORD: ProjetMLOps@24
+    env_file: 
+      - .env
 
   postgres:
     image: postgres:latest
     container_name: postgres_airflow
-    environment:
-      POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
-      POSTGRES_DB: airflow
+    env_file: 
+      - .env
     volumes:
       - postgres-db:/var/lib/postgresql/data
 
 volumes:
   postgres-db:
-
