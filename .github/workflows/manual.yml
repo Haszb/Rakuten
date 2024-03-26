@@ -12,6 +12,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
+      - name: Créer le fichier avec touch
+        run: touch .env
+
       # Utilisation de l'action compose-action
       - name: Run Docker Compose
         env:
