@@ -99,3 +99,4 @@ class PredictionOption(str, Enum):
     option24 = "2905"
     option25 = "2585"
     option26 = "1940"
+    

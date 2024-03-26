@@ -28,6 +28,7 @@ import numpy as np
 from PIL import Image
 import random
 import shutil
+import csv
 from src.predict import Predict
 from datetime import datetime
 
@@ -491,11 +492,11 @@ async def get_stats(db: Session = Depends(database.get_db), current_user: schema
     except Exception as e:
         raise HTTPException(status_code=404, detail="Error : " + str(e)) 
 
-
 @api.post("/move_new_product", tags=['New_product'])
 async def move_new_product(db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     """
     Moves new product data and images, updates datasets, and archives files.
+    And delete all data from the datasets, but keep the files architecture.
     """
     # Check if the user has the necessary permissions
     if current_user.role not in [db_models.Role.admin, db_models.Role.employe]:
@@ -559,18 +560,31 @@ async def move_new_product(db: Session = Depends(database.get_db), current_user:
                                     ignore_index=True)
         y_train_CVw08PX.to_csv('../data/new_product/y_train_CVw08PX_with_new_prod.csv')
         
-        # Archive files in a directory named with the current date
-        source_dir = "../data/new_product"
-        archive_dir = "../data/archive"
+        # Archive new_product data in a file named with the current date
+        archive_dir = "../data/archive/new_product"
         os.makedirs(archive_dir, exist_ok=True)
         
         current_date = datetime.now().strftime("%Y-%m-%d")
-        destination_dir = os.path.join(archive_dir, current_date)
+        # This line is added in case of the function going twice a day, so it don't overwrite the file.
+        current_hour = datetime.now().strftime("%H-%M-%S")
+        destination_dir = os.path.join(f"{archive_dir}/{current_date}_{current_hour}.csv")
         
+        # Check if the file already exist :          
+        new_product_df.to_csv(destination_dir)
+        
+        # Delete all data but columns in new_product's csv to start anew.
+        source_dir = "../data/new_product"
         for file in os.listdir(source_dir):
-            source_file = os.path.join(source_dir, file)
-            if os.path.isfile(source_file):
-                shutil.move(source_file, destination_dir)
+            if file.endswith('.csv'):
+                file_path = os.path.join(source_dir, file)
+                # Read only the header (i.e., column names) of the CSV file
+                with open(file_path, 'r', newline='') as file:
+                    reader = csv.reader(file)
+                    header = next(reader)
+                # Rewrite the CSV file with just the header
+                with open(file_path, 'w', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(header)
             
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail="File not found : " + str(e))
