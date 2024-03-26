@@ -590,3 +590,17 @@ async def move_new_product(db: Session = Depends(database.get_db), current_user:
     #    raise HTTPException(status_code=404, detail="IO Error : " + str(e))
     except Exception as e:
         raise HTTPException(status_code=404, detail="Error : " + str(e)) 
+    
+@api.post("/train", tags=['Training'])
+async def train_model(db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
+    """
+    Train model
+    """
+    pass 
+
+@api.post("/validation", tags=['Training'])
+async def compare_models(db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
+    """
+    Compare current model with new model
+    """
+    pass 
