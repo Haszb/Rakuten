@@ -32,8 +32,6 @@ import csv
 from src.predict import Predict
 from datetime import datetime
 
-
-
 # Chargement des variables d'environnement 
 load_dotenv()
 
@@ -516,8 +514,8 @@ async def move_new_product(db: Session = Depends(database.get_db), current_user:
         new_prod_to_test = new_product_df[columns_to_keep].drop(new_prod_to_train.index)
         
         # Create directories for train and test images
-        train_dir = "../data/new_product/images_train"
-        test_dir = "../data/new_product/images_test"
+        train_dir = "../data/preprocessed/image_train"
+        test_dir = "../data/preprocessed/image_test"
         os.makedirs(train_dir, exist_ok=True)
         os.makedirs(test_dir, exist_ok=True)
         
@@ -549,16 +547,16 @@ async def move_new_product(db: Session = Depends(database.get_db), current_user:
         
         x_train_update = pd.concat([x_train_update, new_prod_to_train.drop(columns=['verified_prediction'])],
                                 ignore_index=True)
-        x_train_update.to_csv('../data/new_product/X_train_update_with_new_prod.csv')
+        x_train_update.to_csv('../data/preprocessed/X_train_update_with_new_prod.csv')
         
         x_test_update = pd.concat([x_test_update, new_prod_to_test.drop(columns=['verified_prediction'])],
                                 ignore_index=True)
-        x_test_update.to_csv('../data/new_product/X_test_update_with_new_prod.csv')
+        x_test_update.to_csv('../data/preprocessed/X_test_update_with_new_prod.csv')
         
         product_code = new_prod_to_train.rename(columns= {'verified_prediction':'prdtypecode'}).drop(columns=["designation","description","productid","imageid"])
         y_train_CVw08PX = pd.concat([y_train_CVw08PX, product_code],
                                     ignore_index=True)
-        y_train_CVw08PX.to_csv('../data/new_product/y_train_CVw08PX_with_new_prod.csv')
+        y_train_CVw08PX.to_csv('../data/preprocessed/y_train_update.csv')
         
         # Archive new_product data in a file named with the current date
         archive_dir = "../data/archive/new_product"

@@ -5,7 +5,6 @@ from airflow.models import Variable
 import json
 from datetime import datetime, timedelta
 import requests
-import shutil
 import logging
 import shutil
 from pathlib import Path
@@ -43,41 +42,35 @@ def get_jwt_token(api_url: str, username: str, password: str):
     if response.status_code == 200:
         return response.json().get("access_token")
     else:
-        print(f"Error obtaining JWT token: {response.status_code}, {response.text}")
+        logging.error(f"Error obtaining JWT token: {response.status_code}, {response.text}")
         return None
 
 def do_nothing():
     pass
 
-def get_new_prod_data():
+def get_new_prod_data(**context):
     file_path = '/app/data/new_product/new_prod_data.json'
-    stats_url = f"{api_url}/Stats" 
-    global token
-
+    stats_url = f"{api_url}/Stats"
+    
     token = get_jwt_token(api_url, admin_username, admin_password)
     if token is None:
-        print("Unable to obtain token, exiting...")
-        return None
-
-    headers = {"Authorization": f"Bearer {token}"}
-
-    print("Requesting new_prod_data.json update...")
-    response = requests.post(stats_url, headers=headers)  
-
-    if response.status_code == 200:
-        print("new_prod_data.json is now available.")
-    else:
-        print(f"Error during API request: {response.status_code}")
-        return None
+        logging.error("Unable to obtain token, exiting...")
+        return
     
-    try:
-        with open(file_path, 'r') as json_file:
-            data = json.load(json_file)
-        
-        return data["Number of new products"], data["Calculated accuracy of new product (%)"]
-    except Exception as e:
-        print(f"Error reading new_prod_data.json: {e}")
-        return None
+    headers = {"Authorization": f"Bearer {token}"}
+    logging.info("Requesting new_prod_data.json update...")
+    response = requests.post(stats_url, headers=headers)
+    
+    if response.status_code == 200:
+        logging.info("new_prod_data.json is now available.")
+        try:
+            with open(file_path, 'r') as json_file:
+                data = json.load(json_file)
+            context['ti'].xcom_push(key='new_prod_data', value=data)
+        except Exception as e:
+            logging.error(f"Error reading new_prod_data.json: {e}")
+    else:
+        logging.error(f"Error during API request: {response.status_code}")
 
 
 def check_conditions(**kwargs):
@@ -128,7 +121,19 @@ def backup(**context):
     logging.info(f"Backup completed successfully to {destination_dir}")
 
 def adjust_dataset(**context):
-    pass
+    move_product_url = f"{api_url}/move_new_product"
+    ti = context['ti']
+    token = ti.xcom_pull(task_ids='get_new_prod_data', key='token')
+    
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = requests.post(move_product_url, headers=headers)
+
+    if response.status_code == 200:
+        logging.info("move_new_product API call successful.")
+    else:
+        logging.error(f"Error during move_new_product API call: {response.status_code}, {response.text}")
+
 
 def retrain_model(**context):
     pass
