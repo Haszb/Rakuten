@@ -4,10 +4,10 @@ from fastapi import HTTPException
 
 def authenticate_user(db: Session, username: str, password: str):
     """
-    Authentifie un utilisateur via son nom d'utilisateur et son mot de passe.
+    Authenticates a user via username and password.
 
-    Renvoi:
-        db_models.User : l'utilisateur authentifié ou False si l'authentification échoue.
+    Returns:
+        db_models.User : the authenticated user or False if authentication fails.
     """
     user = db.query(db_models.User).filter(db_models.User.username == username).first()
     if not user or not user.is_active or not security.verify_password(password, user.hashed_password):
@@ -16,17 +16,17 @@ def authenticate_user(db: Session, username: str, password: str):
 
 def create_user(db: Session, user: schemas.UserCreate):
     """
-    Tente de créer un nouvel utilisateur dans la base de données.
+    Attempts to create a new user in the database.
 
     Args:
-        db (Session): La session de la base de données.
-        user (schemas.UserCreate): Le schéma de l'utilisateur à créer.
+        db (Session): The database session.
+        user (schemas.UserCreate): The schema of the user to be created.
 
     Returns:
-        L'instance de l'utilisateur créé.
+        The instance of the created user.
 
     Raises:
-        HTTPException: Avec un statut 400 pour un conflit de nom d'utilisateur ou un problème de validation.
+        HTTPException: With status 400 for a username conflict or validation problem.
     """
     # Hachage du mot de passe utilisateur
     hashed_password = security.get_password_hash(user.password)
@@ -44,36 +44,36 @@ def create_user(db: Session, user: schemas.UserCreate):
         return db_user
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=400, detail="Ce nom d'utilisateur ou email existe déjà.")
+        raise HTTPException(status_code=400, detail="This e-mail or username already exist")
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erreur inattendue lors de la création de l'utilisateur: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error when creating user.: {str(e)}")
 
 
 def get_user_by_username(db: Session, username: str, raise_exception: bool = True):
     """
-    Récupère un utilisateur via son nom d'utilisateur.
+    Retrieves a user by username.
 
     Args :
-        db (Session) : La session de la base de données.
-        username (str) : Le nom d'utilisateur recherché.
+        db (Session): The database session.
+        username (str): The searched username.
 
-    Renvoi :
-        db_models.User : L'utilisateur s'il a été trouvé, sinon aucun.
+    Return :
+        db_models.User: The user if found, otherwise none.
     """
     user = db.query(db_models.User).filter(db_models.User.username == username).first()
     if user is None and raise_exception:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé.")
+        raise HTTPException(status_code=404, detail="User not found")
     return user
 
 def update_user_by_identifier(db: Session, identifier: str, user_update: schemas.UserUpdate):
     """
-    Met à jour un utilisateur basé sur l'ID, l'email ou le nom d'utilisateur.
+    Updates a user based on ID, email or username.
 
     Args:
-        db (Session): Session de base de données.
-        identifier (str): Peut être l'ID, l'email ou le nom d'utilisateur.
-        user_update (schemas.UserUpdate): Contient les champs à mettre à jour.
+        db (Session): Database session.
+        identifier (str): Can be ID, email or username.
+        user_update (schemas.UserUpdate): Contains fields to be updated.
     """
     if identifier.isdigit():  
         user = db.query(db_models.User).filter(db_models.User.id == int(identifier)).first()
@@ -81,7 +81,7 @@ def update_user_by_identifier(db: Session, identifier: str, user_update: schemas
         user = db.query(db_models.User).filter((db_models.User.username == identifier) | (db_models.User.email == identifier)).first()
 
     if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        raise HTTPException(status_code=404, detail="User not found")
 
     update_data = user_update.dict(exclude_unset=True)
     for key, value in update_data.items():
@@ -93,15 +93,15 @@ def update_user_by_identifier(db: Session, identifier: str, user_update: schemas
         return user
     except:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour de l'utilisateur.")
+        raise HTTPException(status_code=500, detail="Error when updating user.")
 
 def delete_user_by_identifier(db: Session, identifier: str):
     """
-    Supprime un utilisateur à partir de l'ID, l'e-mail ou le nom d'utilisateur.
+    Deletes a user by ID, e-mail or username.
 
     Args:
-        db (Session): Session de base de données.
-        identifier (str): soit l'ID soit l'e-mail soit le nom d'utilisateur.
+        db (Session): Database session.
+        identifier (str): either ID, e-mail or username.
     """
     if identifier.isdigit():
         user = db.query(db_models.User).filter(db_models.User.id == int(identifier)).first()
@@ -109,12 +109,12 @@ def delete_user_by_identifier(db: Session, identifier: str):
         user = db.query(db_models.User).filter((db_models.User.username == identifier) | (db_models.User.email == identifier)).first()
 
     if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        raise HTTPException(status_code=404, detail="User not found")
 
     try:
         db.delete(user)
         db.commit()
-        return {"detail": "Utilisateur supprimé"}
+        return {"detail": "User deleted"}
     except:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Erreur lors de la suppression de l'utilisateur.")
+        raise HTTPException(status_code=500, detail="Error when deleting user.")

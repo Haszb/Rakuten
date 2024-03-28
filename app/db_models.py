@@ -5,7 +5,7 @@ from enum import Enum as PyEnum
 
 class Role(PyEnum):
     """
-    Enum rôles utilisateurs disponibles
+    Enum available user roles
     """
     admin = "Admin"
     employe = "Employe"
@@ -13,15 +13,15 @@ class Role(PyEnum):
 
 class User(Base):
     """
-    Modèle représentant un utilisateur au sein de la base de données. 
+    Model representing a user within the database. 
 
-    Attributs:
-        id (int): clé primaire
-        username (str): nom d'utilisateur unique pour l'utilisateur
-        email (str): e-mail unique pour l'utilisateur
-        hashed_password (str): mot de passe hashé
-        is_active (bool): statut de l'utilisateur
-        role (Enum[Role]): rôle de l'utilisateur
+    Args:
+        id (int): primary key
+        username (str): unique username for the user
+        email (str): user's unique e-mail address
+        hashed_password (str): hashed password
+        is_active (bool): user status
+        role (Enum[Role]): user's role
     """
     __tablename__ = "users"
 
@@ -34,10 +34,10 @@ class User(Base):
 
     @validates('email')
     def validate_email(self, key, email):
-        assert '@' in email, "l'e-mail doit contenir @"
+        assert '@' in email, "Email must contain @"
         return email
 
     @validates('username')
     def validate_username(self, key, username):
-        assert len(username) >= 4, "Le nom d'utilisateur doit contenir au moins 4 caractères"
+        assert len(username) >= 4, "Username must contain at least 4 characters"
         return username

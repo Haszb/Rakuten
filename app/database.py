@@ -13,7 +13,7 @@ try:
         echo=True  
     )
 except SQLAlchemyError as e:
-    print(f"Erreur de connexion à la base de données: {e}")
+    print(f"Database connection error: {e}")
     raise e
 
 # Gestion / connexion à la base de donnée locale
@@ -22,8 +22,8 @@ Base = declarative_base()
 
 def get_db():
     """
-   Permet de créer une nouvelle session SQLAlchemy pour une requête,
-    et la fermer une fois la requête terminée.
+    Creates a new SQLAlchemy session for a query,
+    and close it once the request has been completed.
     """
     db = SessionLocal()
     try:

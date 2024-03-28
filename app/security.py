@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from dotenv import load_dotenv
@@ -23,11 +23,25 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
+    """
+    Creates a JWT access token encoded with a secret key and a specific algorithm.
+
+    The token is created from a supplied data set and can be configured to expire
+    after a certain period of time. If no expiry time is supplied, a default time of 15 minutes is applied.
+
+    Parameters :
+        data (dict): A dictionary containing the data to be encoded in the token.
+        expires_delta (timedelta, optional): A timedelta object representing the time until the token expires.
+        If None, a default expiration of 15 minutes is used.
+
+    Returns :
+        str: An encoded JWT token containing the supplied data and an expiration mark.
+    """
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -36,23 +50,23 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 async def get_current_user(db: Session = Depends(database.get_db), token: str = Depends(oauth2_scheme)):
     """
-    Vérifie l'utilisateur à partir du token JWT.
+    Checks the user against the JWT token.
 
-    Cette fonction décode le token fourni, extrait le nom d'utilisateur (sub) et tente de récupérer l'utilisateur correspondant dans la base de données. Si le token est invalide, expiré, ou si l'utilisateur n'existe pas dans la base de données, une exception HTTP 401 est levée, indiquant que les credentials ne peuvent pas être validés.
+    This function decodes the supplied token, extracts the user name (sub) and attempts to retrieve the corresponding user from the database. If the token is invalid, expired, or if the user does not exist in the database, an HTTP 401 exception is raised, indicating that the credentials cannot be validated.
 
     Args:
-        db (Session): La session de base de données SQLAlchemy, injectée automatiquement par FastAPI grâce à la dépendance `database.get_db`.
-        token (str): Le token JWT fourni par l'utilisateur, injecté automatiquement par FastAPI grâce à la dépendance `oauth2_scheme`.
+        db (Session): The SQLAlchemy database session, automatically injected by FastAPI thanks to the `database.get_db` dependency.
+        token (str): The JWT token supplied by the user, automatically injected by FastAPI thanks to the `oauth2_scheme` dependency.
 
     Returns:
-        db_models.User: L'instance de l'utilisateur récupérée de la base de données si le token est valide et que l'utilisateur existe.
+        db_models.User: The user instance retrieved from the database if the token is valid and the user exists.
 
     Raises:
-        HTTPException: Une exception HTTP 401 est levée si le token est invalide, expiré, ou si aucun utilisateur correspondant n'est trouvé dans la base de données.
+        HTTPException: An HTTP 401 exception is thrown if the token is invalid, expired, or if no corresponding user is found in the database.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Impossible de valider les identifiants",
+        detail="Unable to validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:

@@ -46,49 +46,53 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 # Structure les routes de l'API en "domaines"   
 tags_metadata = [
     {
-        "name": "Utilisateurs",
-        "description": "Gestion des utilisateurs : de la création à la suppression en passant par la mise à jour, sans oublié la gestion des tokens.",
+        "name": "User management",
+        "description": "User management: from creation to updating and deletion, not forgetting token management.",
     },
     {
-        "name": "Fonctionnalités",
-        "description": "Fonctionnalités de l'API comme prédiction de catégorie de produits basée sur les descriptions et les images, l'entrainement ...",
+        "name": "Model features",
+        "description": "API features such as product category prediction based on descriptions and images, training ...",
     },
     {
-        "name": "Système",
-        "description": "Opérations système comme par exemple la vérification de l'état de l'API.",
+        "name": "System",
+        "description": "System operations such as checking API operating status",
+    },
+    {
+        "name": "New product",
+        "description": "Features for adding new products, predicting new products, feedback and statistics",
     }
 ]
 
 users_router = APIRouter()
 
-@users_router.post("/users", response_model=schemas.User, tags=["Utilisateurs"])
+@users_router.post("/users", response_model=schemas.User, tags=["User management"])
 def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     if current_user.role != db_models.Role.admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Utilisateur non autorisé")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized user")
     
     existing_user = db.query(db_models.User).filter(db_models.User.username == user.username).first()
     if existing_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ce nom d'utilisateur existe déjà")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This username already exist")
     
     return crud.create_user(db=db, user=user)
 
-@users_router.put("/users/{identifier}", response_model=schemas.User, tags=["Utilisateurs"])
+@users_router.put("/users/{identifier}", response_model=schemas.User, tags=["User management"])
 def update_user(identifier: str, user: schemas.UserUpdate, db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     if current_user.role != db_models.Role.admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Utilisateur non autorisé")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized user")
     db_user = crud.update_user_by_identifier(db=db, identifier=identifier, user_update=user)
     if db_user is None:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
-@users_router.delete("/users/{identifier}", status_code=status.HTTP_204_NO_CONTENT, tags=["Utilisateurs"])
+@users_router.delete("/users/{identifier}", status_code=status.HTTP_204_NO_CONTENT, tags=["User management"])
 def delete_user(identifier: str, db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     if current_user.role != db_models.Role.admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Utilisateur non autorisé")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized user")
     success = crud.delete_user_by_identifier(db=db, identifier=identifier)
     if not success:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    return {"detail": "Utilisateur supprimé"}
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"detail": "User deleted"}
 
 # Initialisation de l'API
 api = FastAPI(
@@ -102,9 +106,9 @@ api.include_router(users_router)
 @api.on_event("startup")
 async def startup_event():
     """
-    Au démarrage : 
-    - Vérifie si la table users existe et la crée si ce n'est pas le cas 
-    - vérifie l'existence d'un utilisateur admin  et en crée un s'il n'existe pas   
+    At startup: 
+        - checks if users table exists and creates one if it doesn't 
+        - checks for the existence of an admin user and creates one if it doesn't exist   
     """
     db = database.SessionLocal() 
     Base.metadata.create_all(bind=engine)
@@ -126,7 +130,7 @@ async def startup_event():
     finally:
         db.close()
 
-@api.get("/", response_class=HTMLResponse, tags=["Système"])
+@api.get("/", response_class=HTMLResponse, tags=["System"])
 def home():
     """
     Renvoie une page d'index avec des liens vers la documentation de l'API et la spécification OpenAPI.
@@ -156,7 +160,7 @@ def home():
         </body>
     </html>
     """
-@api.post("/token", tags=["Utilisateurs"])
+@api.post("/token", tags=["User management"])
 async def token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
     user = crud.authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -167,11 +171,11 @@ async def token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@api.get('/ping', tags=["Système"])
+@api.get('/ping', tags=["System"])
 async def get_ping():
     return "It's working"
 
-@api.post('/prediction', tags=["Fonctionnalités"])
+@api.post('/prediction', tags=["Model features"])
 async def get_prediction(prediction_data: PredictionData, db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     """
     Return the prediction of the product category.
@@ -230,7 +234,7 @@ def generate_productid():
 def generate_imageid():
     return random.randint(1328824385, 10000000000)
 
-@api.post("/new_product", tags=["New_product"])
+@api.post("/new_product", tags=["New product"])
 async def create_product(designation: str = Form(...),
                          description: str = Form(...),
                          image: UploadFile = File(...),
@@ -299,7 +303,7 @@ async def create_product(designation: str = Form(...),
     except (IOError, SyntaxError) as e:
         return {"error": "Invalid image file"}
 
-@api.post("/predict_new_product", tags=["New_product"])
+@api.post("/predict_new_product", tags=["New product"])
 async def predict_new_product(prediction_data: PredictionData, db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     """
     Return the prediction of the newproduct category.
@@ -368,7 +372,7 @@ else:
     # If the predictions file does not exist, set the model prediction to 0    
     model_prediction = 0
 
-@api.post("/check_prediction", tags=["New_product"])
+@api.post("/check_prediction", tags=["New product"])
 async def check_prediction(model_prediction: int = model_prediction,
                            verification_prediction: PredictionOption = PredictionOption.success,
                            current_user: schemas.User = Depends(get_current_user)):
@@ -433,7 +437,7 @@ async def check_prediction(model_prediction: int = model_prediction,
     return new_row
 
    
-@api.post('/Stats', tags=["New_product"])
+@api.post('/Stats', tags=["New product"])
 async def get_stats(db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     """
     Retrieves statistics on new product predictions.
@@ -490,7 +494,7 @@ async def get_stats(db: Session = Depends(database.get_db), current_user: schema
     except Exception as e:
         raise HTTPException(status_code=404, detail="Error : " + str(e)) 
 
-@api.post("/move_new_product", tags=['New_product'])
+@api.post("/move_new_product", tags=['New product'])
 async def move_new_product(db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     """
     Moves new product data and images, updates datasets, and archives files.
@@ -505,7 +509,7 @@ async def move_new_product(db: Session = Depends(database.get_db), current_user:
         if os.path.exists("../data/new_product/prediction_verified.csv"):
             new_product_df = pd.read_csv("../data/new_product/prediction_verified.csv")
         else:
-            return "Le fichier prediction_verified.csv n'existe pas."
+            return "The file prediction_verified.csv does not exist."
         
         # Split the new product data into train and test sets
         sample_size_train = int(len(new_product_df) * 0.8)
@@ -591,14 +595,14 @@ async def move_new_product(db: Session = Depends(database.get_db), current_user:
     except Exception as e:
         raise HTTPException(status_code=404, detail="Error : " + str(e)) 
     
-@api.post("/train", tags=['Training'])
+@api.post("/train", tags=['Model features'])
 async def train_model(db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     """
     Train model
     """
     pass 
 
-@api.post("/validation", tags=['Training'])
+@api.post("/validation", tags=['Model features'])
 async def compare_models(db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     """
     Compare current model with new model

@@ -5,38 +5,38 @@ from enum import Enum
 
 class UserCreate(BaseModel):
     """
-    Schema pour la création d'un utilisateur
+    Schema for user creation
     """
-    username: str = Field(..., example="DataScientest", min_length=4, description="Nom d'utilisateur unique pour l'utilisateur")
-    email: EmailStr = Field(..., example="admin@datascientest.com", description="E-mail unique pour l'utilisateur")
-    password: str = Field(..., example="nepasmettre123456", min_length=6, description="Mot de passe de l'utilisateur")
+    username: str = Field(..., example="DataScientest", min_length=4, description="Unique user name")
+    email: EmailStr = Field(..., example="admin@datascientest.com", description="Unique user e-mail")
+    password: str = Field(..., example="nepasmettre123456", min_length=6, description="User's password")
     role: Role = Field(..., description="Rôle attribué à l'utilisateur")
 
 class User(BaseModel):
     """
-    Schema de réponse pour obtenir les informations sur un utilisateur
+    Response scheme for obtaining user information
     """
-    id: int = Field(..., example=1, description="l'ID unique de l'utilisateur")
-    is_active: bool = Field(..., example=True, description="Statut de l'utilisateur : actif / inactif")
-    username: str = Field(..., example="DataScientest", description="Le nom d'utilisateur.")
-    email: EmailStr = Field(..., example="admin@datascientest.com", description="Le mail attaché à l'utilisateur")
-    role: Role = Field(..., description="Le rôle de l'utilisateur")
+    id: int = Field(..., example=1, description="User's unique ID")
+    is_active: bool = Field(..., example=True, description="User's status : active / inactive")
+    username: str = Field(..., example="DataScientest", description="User name")
+    email: EmailStr = Field(..., example="admin@datascientest.com", description="User's e-mail")
+    role: Role = Field(..., description="User's role")
     
     class Config:
         orm_mode = True
 
 class UserUpdate(BaseModel):
     """
-    Schema modifier les informations d'un utilisateur
+    Schema for user modification
     """
-    username: Optional[str] = Field(None, description="Le nouveau nom d'utilisateur")
-    email: Optional[EmailStr] = Field(None, description="Le nouvel e-mail")
-    is_active: Optional[bool] = Field(None, description="Active ou désactive le compte utilisateur")
-    role: Optional[Role] = Field(None, description="Le nouveau rôle utilisateur")  
+    username: Optional[str] = Field(None, description="New username")
+    email: Optional[EmailStr] = Field(None, description="New e-mail")
+    is_active: Optional[bool] = Field(None, description="Enable or disable user account")
+    role: Optional[Role] = Field(None, description="New user's role")  
 
 class PredictionData(BaseModel):
     """
-    A class to represent a Vehicle.
+    A class to represent a product.
     
     Attributes:
     -----------
