@@ -19,7 +19,8 @@ from dotenv import load_dotenv
 from tensorflow import keras
 import pandas as pd
 import json
-from src.features.build_features import TextPreprocessor, ImagePreprocessor
+from src.features.build_features import DataImporter, TextPreprocessor, ImagePreprocessor
+from src.models.train_model import TextLSTMModel, ImageVGG16Model, concatenate
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array, load_img
@@ -29,6 +30,7 @@ from PIL import Image
 import random
 import shutil
 import csv
+import pickle
 from src.predict import Predict
 from datetime import datetime
 
@@ -591,16 +593,119 @@ async def move_new_product(db: Session = Depends(database.get_db), current_user:
     except Exception as e:
         raise HTTPException(status_code=404, detail="Error : " + str(e)) 
     
-@api.post("/train", tags=['Training'])
+@api.post("/retrain", tags=['Training'])
 async def train_model(db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     """
-    Train model
-    """
-    pass 
+    Train and archive machine learning models.
+    """    # Check if the user has the necessary permissions
+    if current_user.role not in [db_models.Role.admin]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied. Operation only allowed for administrators")
+    
+    try:
+        # Create a folder and move the previous model to it
+        work_dir = "../models"
+        old_model_dir = "../models/old"
+        os.makedirs(old_model_dir, exist_ok=True)
+        
+        for file_name in os.listdir(work_dir):
+            if file_name not in ["mapper.json", "mapper.pkl", "__init__.py"]:
+                source_dir = os.path.join(work_dir, file_name)
+                shutil.move(source_dir, old_model_dir)
+            
+        
+        # Re-train the model with the updated dataset.
+        data_importer = DataImporter()
+        df = data_importer.load_data()
+        X_train, X_val, _, y_train, y_val, _ = data_importer.split_train_test(df)
+
+        # Preprocess text and images
+        text_preprocessor = TextPreprocessor()
+        image_preprocessor = ImagePreprocessor()
+        text_preprocessor.preprocess_text_in_df(X_train, columns=["description"])
+        text_preprocessor.preprocess_text_in_df(X_val, columns=["description"])
+        image_preprocessor.preprocess_images_in_df(X_train)
+        image_preprocessor.preprocess_images_in_df(X_val)
+
+        # Train LSTM model
+        print("Training LSTM Model")
+        text_lstm_model = TextLSTMModel()
+        text_lstm_model.preprocess_and_fit(X_train, y_train, X_val, y_val)
+        print("Finished training LSTM")
+
+        print("Training VGG")
+        # Train VGG16 model
+        image_vgg16_model = ImageVGG16Model()
+        image_vgg16_model.preprocess_and_fit(X_train, y_train, X_val, y_val)
+        print("Finished training VGG")
+
+        with open("../models/tokenizer_config.json", "r", encoding="utf-8") as json_file:
+            tokenizer_config = json_file.read()
+        tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(tokenizer_config)
+        lstm = keras.models.load_model("../models/best_lstm_model.h5")
+        vgg16 = keras.models.load_model("../models/best_vgg16_model.h5")
+
+        print("Training the concatenate model")
+        model_concatenate = concatenate(tokenizer, lstm, vgg16)
+        lstm_proba, vgg16_proba, new_y_train = model_concatenate.predict(X_train, y_train)
+        best_weights, accuracy = model_concatenate.optimize(lstm_proba, vgg16_proba, new_y_train)
+        print("Finished training concatenate model")
+
+        with open("../models/best_weights.pkl", "wb") as file:
+            pickle.dump(best_weights, file)
+
+        num_classes = 27
+
+        proba_lstm = keras.layers.Input(shape=(num_classes,))
+        proba_vgg16 = keras.layers.Input(shape=(num_classes,))
+
+        weighted_proba = keras.layers.Lambda(
+            lambda x: best_weights[0] * x[0] + best_weights[1] * x[1]
+        )([proba_lstm, proba_vgg16])
+
+        concatenate_model = keras.models.Model(
+            inputs=[proba_lstm, proba_vgg16], outputs=weighted_proba
+        )
+        # Save the model in h5 format
+        concatenate_model.save("../models/concatenate.h5")
+        print('Model saved')
+
+        # Save the value of the accuracy used to obtain de best_weights
+        with open("../models/accuracy.json", "w") as json_file:
+            json.dump({"accuracy": accuracy}, json_file)
+        print("Accuracy saved")
+        
+        # Create an archive of the model
+        for file_name in os.listdir(work_dir):
+            date_actuelle = datetime.now().strftime("%Y-%m-%d")
+            archive_dir = os.path.join("../data/archive/model", date_actuelle)
+            if os.path.isfile(work_dir) and file_name not in ["mapper.json", "mapper.pkl", "__init__.py"]:
+                shutil.copytree(work_dir, archive_dir)
+        print("Model archived")
+                
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail="File not found : " + str(e))
+    #except IOError as e:
+    #    raise HTTPException(status_code=404, detail="IO Error : " + str(e))
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Error : " + str(e)) 
 
 @api.post("/validation", tags=['Training'])
 async def compare_models(db: Session = Depends(database.get_db), current_user: schemas.User = Depends(get_current_user)):
     """
-    Compare current model with new model
+    Return current model's accuracy
     """
-    pass 
+    if current_user.role not in [db_models.Role.admin]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied. Operation only allowed for administrators")
+
+    try:
+        with open("../models/accuracy.json", "r") as json_file:
+            new_accuracy = json.load(json_file)
+
+        return new_accuracy['accuracy']
+    
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail="File not found : " + str(e))
+#except IOError as e:
+#    raise HTTPException(status_code=404, detail="IO Error : " + str(e))
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Error : " + str(e)) 

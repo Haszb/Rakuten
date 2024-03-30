@@ -10,7 +10,7 @@ import math
 
 
 class DataImporter:
-    def __init__(self, filepath="data/preprocessed"):
+    def __init__(self, filepath="../data/preprocessed"):
         self.filepath = filepath
 
     def load_data(self):
@@ -25,7 +25,7 @@ class DataImporter:
         }
         target["prdtypecode"] = target["prdtypecode"].replace(modalite_mapping)
 
-        with open("models/mapper.pkl", "wb") as fichier:
+        with open("../models/mapper.pkl", "wb") as fichier:
             pickle.dump(modalite_mapping, fichier)
 
         df = pd.concat([data, target], axis=1)
@@ -80,7 +80,7 @@ class DataImporter:
 
 
 class ImagePreprocessor:
-    def __init__(self, filepath="data/preprocessed/image_train"):
+    def __init__(self, filepath="../data/preprocessed/image_train"):
         self.filepath = filepath
 
     def preprocess_images_in_df(self, df):
