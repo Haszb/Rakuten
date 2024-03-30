@@ -92,10 +92,20 @@ target/
 .mypy_cache/
 
 # Log files
-/logs/
+logs/
 
 # Artifacts
 # /models/
 result.zip
 models/__init__.py
 .env
+models/best_weights.json
+models/best_weights.pkl
+models/tokenizer_config.json
+models/old/best_weights.json
+models/old/best_weights.pkl
+models/old/tokenizer_config.json
+models/old/old_old/accuracy.json
+models/old/old_old/best_weights.json
+models/old/old_old/best_weights.pkl
+models/old/old_old/tokenizer_config.json

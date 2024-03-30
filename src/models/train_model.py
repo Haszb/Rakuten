@@ -30,7 +30,7 @@ class TextLSTMModel:
         self.tokenizer.fit_on_texts(X_train["description"])
 
         tokenizer_config = self.tokenizer.to_json()
-        with open("models/tokenizer_config.json", "w", encoding="utf-8") as json_file:
+        with open("../models/tokenizer_config.json", "w", encoding="utf-8") as json_file:
             json_file.write(tokenizer_config)
 
         train_sequences = self.tokenizer.texts_to_sequences(X_train["description"])
@@ -64,7 +64,7 @@ class TextLSTMModel:
 
         lstm_callbacks = [
             ModelCheckpoint(
-                filepath="models/best_lstm_model.h5", save_best_only=True
+                filepath="../models/best_lstm_model.h5", save_best_only=True
             ),  # Enregistre le meilleur modèle
             EarlyStopping(
                 patience=3, restore_best_weights=True
@@ -145,7 +145,7 @@ class ImageVGG16Model:
 
         vgg_callbacks = [
             ModelCheckpoint(
-                filepath="models/best_vgg16_model.h5", save_best_only=True
+                filepath="../models/best_vgg16_model.h5", save_best_only=True
             ),  # Enregistre le meilleur modèle
             EarlyStopping(
                 patience=3, restore_best_weights=True
@@ -155,7 +155,7 @@ class ImageVGG16Model:
 
         self.model.fit(
             train_generator,
-            epochs=1,
+            epochs=10,
             validation_data=val_generator,
             callbacks=vgg_callbacks,
         )
@@ -249,4 +249,4 @@ class concatenate:
                 best_accuracy = accuracy
                 best_weights = (lstm_weight, vgg16_weight)
 
-        return best_weights
+        return best_weights, accuracy

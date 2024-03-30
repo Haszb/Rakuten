@@ -29,11 +29,11 @@ image_vgg16_model = ImageVGG16Model()
 image_vgg16_model.preprocess_and_fit(X_train, y_train, X_val, y_val)
 print("Finished training VGG")
 
-with open("models/tokenizer_config.json", "r", encoding="utf-8") as json_file:
+with open("../models/tokenizer_config.json", "r", encoding="utf-8") as json_file:
     tokenizer_config = json_file.read()
 tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(tokenizer_config)
-lstm = keras.models.load_model("models/best_lstm_model.h5")
-vgg16 = keras.models.load_model("models/best_vgg16_model.h5")
+lstm = keras.models.load_model("../models/best_lstm_model.h5")
+vgg16 = keras.models.load_model("../models/best_vgg16_model.h5")
 
 print("Training the concatenate model")
 model_concatenate = concatenate(tokenizer, lstm, vgg16)
@@ -41,7 +41,7 @@ lstm_proba, vgg16_proba, new_y_train = model_concatenate.predict(X_train, y_trai
 best_weights = model_concatenate.optimize(lstm_proba, vgg16_proba, new_y_train)
 print("Finished training concatenate model")
 
-with open("models/best_weights.pkl", "wb") as file:
+with open("../models/best_weights.pkl", "wb") as file:
     pickle.dump(best_weights, file)
 
 num_classes = 27
@@ -58,4 +58,4 @@ concatenate_model = keras.models.Model(
 )
 
 # Enregistrer le modèle au format h5
-concatenate_model.save("models/concatenate.h5")
+concatenate_model.save("../models/concatenate.h5")
