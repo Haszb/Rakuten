@@ -71,9 +71,7 @@ services:
       - ./flow/plugins:/opt/airflow/plugins
       - ./flow/airflow_variables.json:/opt/airflow/airflow_variables.json
     command: >
-      bash -c "airflow db upgrade &&
-               airflow users create --role Admin --username admin --email admin@example.com --firstname admin --lastname admin --password admin &&
-               airflow variables import /opt/airflow/airflow_variables.json"
+      bash -c "airflow variables import /opt/airflow/airflow_variables.json"
     depends_on:
       - postgres
 
