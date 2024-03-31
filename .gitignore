@@ -110,3 +110,4 @@ models/old/old_old/accuracy.json
 models/old/old_old/best_weights.json
 models/old/old_old/best_weights.pkl
 models/old/old_old/tokenizer_config.json
+flow/airflow_variables.json
