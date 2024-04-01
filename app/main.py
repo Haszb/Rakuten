@@ -705,7 +705,7 @@ async def compare_models(db: Session = Depends(database.get_db), current_user: s
         with open("../models/accuracy.json", "r") as json_file:
             new_accuracy = json.load(json_file)
 
-        return new_accuracy['accuracy']
+        return new_accuracy['accuracy'] * 100
     
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail="File not found : " + str(e))

@@ -237,7 +237,7 @@ def validation(**context):
     
     validation_url = f"{api_url}/validation"
     headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(validation_url, headers=headers)
+    response = requests.post(validation_url, headers=headers)
 
     if response.status_code != 200:
         logging.warning("Attempting to refresh token due to failed validation call...")
@@ -247,15 +247,15 @@ def validation(**context):
             return
 
         headers = {"Authorization": f"Bearer {token}"}
-        response = requests.get(validation_url, headers=headers)
+        response = requests.post(validation_url, headers=headers)
         ti.xcom_push(key='token', value=token)
 
     if response.status_code == 200:
-        new_trained_accuracy = response.json()['accuracy']
+        new_trained_accuracy = response.json()
         ti.xcom_push(key='new_trained_accuracy', value=new_trained_accuracy)
 
         prod_data = ti.xcom_pull(key='prod_data', task_ids='check_conditions')
-        number_of_new_products, new_products_accuracy = prod_data
+        number_of_new_products, new_products_accuracy, _ = prod_data
         current_accuracy = float(Variable.get("current_accuracy", default_var=85))
 
         logging.info(f"New trained accuracy: {new_trained_accuracy}, Current accuracy: {current_accuracy}, New products accuracy: {new_products_accuracy}")
@@ -263,13 +263,13 @@ def validation(**context):
         ti.xcom_push(key='number_of_products_processed', value=number_of_new_products)
         ti.xcom_push(key='model_accuracy_before', value=new_products_accuracy)
         ti.xcom_push(key='current_accuracy', value=current_accuracy)
-
+               
         if new_trained_accuracy > current_accuracy or (new_trained_accuracy < current_accuracy and new_trained_accuracy > new_products_accuracy and new_trained_accuracy >= 0.9 * current_accuracy):
             Variable.set("current_accuracy", new_trained_accuracy)
             return 'email_success'
         else:
-            old_model_dir = Path("/app/models/old")
-            model_dir = Path("/app/models")
+            old_model_dir = Path("./models/old")
+            model_dir = Path("./models")
             if old_model_dir.exists():
                 for file in old_model_dir.iterdir():
                     source = file
