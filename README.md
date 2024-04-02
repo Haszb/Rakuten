@@ -8,6 +8,10 @@ Project Organization
 
     ├── LICENSE
     ├── README.md                   <- The top-level README for developers using this project.
+    ├── .github                     <- GitHub configuration folder.
+    |   ├── workflows               <- Workflows folder.
+    |   |   ├── run_containers.yml  <- GitHub action to check the startup of containers from the docker-compose file.
+    |   |   └── unit_tests.yml      <- Github action to run the unit tests.
     ├── app                         <- API folder
     │   ├── Dockerfile              <- Dockerfile for building the Docker image of the API.
     │   ├── Tests                   <- Directory for API unit tests.
