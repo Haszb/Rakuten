@@ -1,6 +1,6 @@
 name: Run docker compose
 
-on: push # Déclencheur manuel depuis l'interface GitHub
+on: push 
 
 jobs:
   build:
@@ -15,7 +15,7 @@ jobs:
       - name: Créer le fichier avec touch
         run: touch .env
 
-      # Utilisation de l'action compose-action
+      # Launch docker-compose
       - name: Run Docker Compose
         env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
@@ -44,7 +44,6 @@ jobs:
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
         uses: hoverkraft-tech/compose-action@v1.5.1
         with:
-          compose-file: "./docker-compose.yml" # Spécification du fichier docker-compose à utiliser
-          down-flags: "--volumes" # Options supplémentaires pour la commande docker-compose down
-          
+          compose-file: "./docker-compose.yml" # Docker-compose file to use
+          down-flags: "--volumes" # Options for docker-compose down         
 
